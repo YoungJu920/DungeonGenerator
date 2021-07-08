@@ -22,9 +22,9 @@ namespace DungeonGeneratorByBinarySpacePartitioning
 
     public enum TileType
     {
-        WALL = 0,
-        GROUND = 1,
-        FOREVER = 2,
+        GROUND = 0,
+        DYNAMIC = 1,
+        STATIC = 2,
     }
 
     public class DungeonGenerator : MonoBehaviour
@@ -40,7 +40,8 @@ namespace DungeonGeneratorByBinarySpacePartitioning
         [SerializeField] private Transform lineHolder;
         [SerializeField] private GameObject rectangle;
 
-        [SerializeField] private Tile tile;
+        [SerializeField] private Tile dynamicTile;
+        [SerializeField] private Tile staticTile;
         [SerializeField] private Tilemap tilemap;
 
         TileType[,] map;
@@ -92,11 +93,13 @@ namespace DungeonGeneratorByBinarySpacePartitioning
                 RectInt size = treeNode.treeSize;
                 //int width = Mathf.Max(Random.Range(size.width / 2, size.width - 1)); //트리 범위 내에서 무작위 크기 선택, 최소 크기 : width / 2
                 //int height = Mathf.Max(Random.Range(size.height / 2, size.height - 1));
-                int width = (int)Mathf.Max(Random.Range(size.width * 0.4f, size.width * 0.8f)); //트리 범위 내에서 무작위 크기 선택, 최소 크기 : width / 2
-                int height = (int)Mathf.Max(Random.Range(size.height * 0.4f, size.height * 0.8f));
+                int width = (int)Mathf.Max(Random.Range(size.width * 0.5f, size.width * 0.6f)); //트리 범위 내에서 무작위 크기 선택, 최소 크기 : width / 2
+                int height = (int)Mathf.Max(Random.Range(size.height * 0.5f, size.height * 0.6f));
 
-                int x = treeNode.treeSize.x + Random.Range(1, size.width - width); //최대 크기 : width / 2
-                int y = treeNode.treeSize.y + Random.Range(1, size.height - height);
+                int x = treeNode.treeSize.x + (int)((size.width - width) * 0.5f); //최대 크기 : width / 2
+                int y = treeNode.treeSize.y + (int)((size.height - height) * 0.5f);
+
+                Spread(x, y, width, height, 1.4f);
                 OnDrawDungeon(x, y, width, height); //던전 렌더링
                 return new RectInt(x, y, width, height); //리턴 값은 던전의 크기로 길을 생성할 때 크기 정보로 활용
             }
@@ -115,12 +118,12 @@ namespace DungeonGeneratorByBinarySpacePartitioning
             for (int x = Mathf.Min(x1, x2); x <= Mathf.Max(x1, x2); x++) //x1과 x2중 값이 작은 곳부터 값이 큰 곳까지 타일 생성
             {
                 //tilemap.SetTile(new Vector3Int(x - mapSize.x / 2, y1 - mapSize.y / 2, 0), tile); //mapSize.x / 2를 빼는 이유는 화면 중앙에 맞추기 위함
-                map[x, y1] = TileType.GROUND;
+                map[x, y1] = TileType.STATIC;
             }
             for (int y = Mathf.Min(y1, y2); y <= Mathf.Max(y1, y2); y++)
             {
                 //tilemap.SetTile(new Vector3Int(x2 - mapSize.x / 2, y - mapSize.y / 2, 0), tile);
-                map[x2, y] = TileType.GROUND;
+                map[x2, y] = TileType.STATIC;
             }
                 
             GenerateRoad(treeNode.leftTree, n + 1);
@@ -141,8 +144,74 @@ namespace DungeonGeneratorByBinarySpacePartitioning
                 for (int j = y; j < y + height; j++)
                 {
                     //tilemap.SetTile(new Vector3Int(i - mapSize.x / 2, j - mapSize.y / 2, 0), tile);
-                    map[i, j] = TileType.GROUND;
+                    map[i, j] = TileType.STATIC;
                 }   
+        }
+
+        private void Spread(int x, int y, int width, int height, float ratio)   // 방 크기의 ratio 만큼 확장한 영역에 0,1 뿌려준다.
+        {
+            int _width = (int)(width * ratio);
+            int _height = (int)(height * ratio);
+            int _x = x - ((int)((_width - width) * 0.5f));
+            int _y = y - ((int)((_height - height) * 0.5f));
+
+            for (int i = _x; i < _x + _width; i++)
+                for (int j = _y; j < _y + _height; j++)
+                {
+                    if (Random.Range(0, 100) >= 45)
+                        map[i, j] = TileType.DYNAMIC;
+                }
+        }
+
+        private void Absorption()
+        {
+            for (int i = 0; i < map.GetLength(0); i++)
+            {
+                for (int k = 0; k < map.GetLength(1); k++)
+                {
+                    if (map[i,k] == TileType.DYNAMIC && (GetNeighborCount(i, k, TileType.DYNAMIC) + GetNeighborCount(i, k, TileType.STATIC) > 4))
+                        map[i,k] = TileType.DYNAMIC;
+
+                    else if (map[i,k] == TileType.GROUND && (GetNeighborCount(i, k, TileType.DYNAMIC) + GetNeighborCount(i, k, TileType.STATIC) > 5))
+                        map[i,k] = TileType.DYNAMIC;
+
+                    else if (map[i,k] == TileType.GROUND || map[i,k] == TileType.DYNAMIC)
+                        map[i,k] = TileType.GROUND;
+                }
+            }
+        }
+
+        private int GetNeighborCount(int x, int y, TileType type)
+        {
+            int count = 0;
+
+            if (y - 1 < mapSize.y)
+            {
+                if (x - 1 >= 0 && map[x - 1, y - 1] == type)
+                    count++;
+                if (map[x, y - 1] == type)
+                    count++;
+                if (x + 1 < mapSize.x && map[x + 1, y - 1] == type)
+                    count++;
+            }
+
+            if (y + 1 >= 0)
+            {
+                if (x - 1 >= 0 && map[x - 1, y + 1] == type)
+                    count++;
+                if (map[x, y + 1] == type)
+                    count++;
+                if (x + 1 < mapSize.x && map[x + 1, y + 1] == type)
+                    count++;
+            }
+
+            if (x - 1 >= 0 && map[x - 1, y] == type)
+                count++;
+
+            if (x + 1 < mapSize.x && map[x + 1, y] == type)
+                count++;
+
+            return count;
         }
 
         private void OnDrawRectangle(int x, int y, int width, int height) //라인 렌더러를 이용해 사각형을 그리는 메소드
@@ -169,12 +238,17 @@ namespace DungeonGeneratorByBinarySpacePartitioning
         
         private void DrawMap()
         {
+            //Absorption();
+
             for (int i = 0; i < map.GetLength(0); i++)
             {
                 for (int k = 0; k < map.GetLength(1); k++)
                 {
-                    if (map[i,k] == TileType.GROUND)
-                        tilemap.SetTile(new Vector3Int(i - mapSize.x / 2, k - mapSize.y / 2, 0), tile);
+                    if (map[i,k] == TileType.STATIC)
+                        tilemap.SetTile(new Vector3Int(i - mapSize.x / 2, k - mapSize.y / 2, 0), staticTile);
+
+                    if (map[i,k] == TileType.DYNAMIC)
+                        tilemap.SetTile(new Vector3Int(i - mapSize.x / 2, k - mapSize.y / 2, 0), dynamicTile);
                 }
             }
         }
