@@ -629,7 +629,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\uC6C5\uC7A5....."
+  m_Text: Make
 --- !u!222 &773985824
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -669,10 +669,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mapSize: {x: 100, y: 100}
   maxNode: 3
-  minDivideSize: 0.4
+  minDivideSize: 0.2
   maxDivideSize: 0.8
-  minRoomSize: 0
-  bridgeSize: 0
+  groundRatio: 35
   line: {fileID: 1228365410148288, guid: 12db357e2419aa74db5b930bd0698102, type: 3}
   lineHolder: {fileID: 1328091431}
   rectangle: {fileID: 1027331486530536, guid: 9bacab027b9aeac4ca6158a26532ff99, type: 3}

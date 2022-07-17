@@ -35,8 +35,7 @@ namespace DungeonGeneratorByBinarySpacePartitioning
         [SerializeField] private int maxNode;
         [SerializeField] private float minDivideSize;
         [SerializeField] private float maxDivideSize;
-        [SerializeField] private int minRoomSize;
-        [SerializeField] private int bridgeSize;
+        [SerializeField] private int groundRatio;
 
         [SerializeField] private GameObject line;
         [SerializeField] private Transform lineHolder;
@@ -110,8 +109,6 @@ namespace DungeonGeneratorByBinarySpacePartitioning
             if (n == maxNode) //노드가 최하위일 때만 조건문 실행
             {
                 RectInt size = treeNode.treeSize;
-                //int width = Mathf.Max(Random.Range(size.width / 2, size.width - 1)); //트리 범위 내에서 무작위 크기 선택, 최소 크기 : width / 2
-                //int height = Mathf.Max(Random.Range(size.height / 2, size.height - 1));
                 int width = (int)Mathf.Max(Random.Range(size.width * 0.4f, size.width * 0.5f)); //트리 범위 내에서 무작위 크기 선택, 최소 크기 : width / 2
                 int height = (int)Mathf.Max(Random.Range(size.height * 0.4f, size.height * 0.5f));
 
@@ -139,29 +136,29 @@ namespace DungeonGeneratorByBinarySpacePartitioning
             // 가로 브릿지
             for (int x = Mathf.Min(x1, x2); x <= Mathf.Max(x1, x2); x++) //x1과 x2중 값이 작은 곳부터 값이 큰 곳까지 타일 생성
             {
-                if (y1 + 3 < mapSize.y) map[x, y1 + 3] = GetRandomTile();
-                if (y1 + 2 < mapSize.y) map[x, y1 + 2] = GetRandomTile();
-                if (y1 + 1 < mapSize.y) map[x, y1 + 1] = GetRandomTile();
+                if (y1 + 3 < mapSize.y) map[x, y1 + 3] = GetRandomTileType();
+                if (y1 + 2 < mapSize.y) map[x, y1 + 2] = GetRandomTileType();
+                if (y1 + 1 < mapSize.y) map[x, y1 + 1] = GetRandomTileType();
 
                 map[x, y1] = TileType.STATIC;
 
-                if (y1 - 1 >= 0)        map[x, y1 - 1] = GetRandomTile();
-                if (y1 - 2 >= 0)        map[x, y1 - 2] = GetRandomTile();
-                if (y1 - 3 >= 0)        map[x, y1 - 3] = GetRandomTile();
+                if (y1 - 1 >= 0)        map[x, y1 - 1] = GetRandomTileType();
+                if (y1 - 2 >= 0)        map[x, y1 - 2] = GetRandomTileType();
+                if (y1 - 3 >= 0)        map[x, y1 - 3] = GetRandomTileType();
             }
 
             // 세로 브릿지
             for (int y = Mathf.Min(y1, y2); y <= Mathf.Max(y1, y2); y++)
             {
-                if (x2 - 3 >= 0)        map[x2 - 3, y] = GetRandomTile();
-                if (x2 - 2 >= 0)        map[x2 - 2, y] = GetRandomTile();
-                if (x2 - 1 >= 0)        map[x2 - 1, y] = GetRandomTile();
+                if (x2 - 3 >= 0)        map[x2 - 3, y] = GetRandomTileType();
+                if (x2 - 2 >= 0)        map[x2 - 2, y] = GetRandomTileType();
+                if (x2 - 1 >= 0)        map[x2 - 1, y] = GetRandomTileType();
 
                 map[x2, y] = TileType.STATIC;
 
-                if (x2 + 1 < mapSize.x) map[x2 + 1, y] = GetRandomTile();
-                if (x2 + 2 < mapSize.x) map[x2 + 2, y] = GetRandomTile();
-                if (x2 + 3 < mapSize.x) map[x2 + 3, y] = GetRandomTile();
+                if (x2 + 1 < mapSize.x) map[x2 + 1, y] = GetRandomTileType();
+                if (x2 + 2 < mapSize.x) map[x2 + 2, y] = GetRandomTileType();
+                if (x2 + 3 < mapSize.x) map[x2 + 3, y] = GetRandomTileType();
             }
                 
             GenerateRoad(treeNode.leftTree, n + 1);
@@ -196,13 +193,13 @@ namespace DungeonGeneratorByBinarySpacePartitioning
             for (int i = _x; i < _x + _width; i++)
                 for (int j = _y; j < _y + _height; j++)
                 {
-                    map[i, j] = GetRandomTile();
+                    map[i, j] = GetRandomTileType();
                 }
         }
 
-        private TileType GetRandomTile()
+        private TileType GetRandomTileType()
         {
-            return Random.Range(0, 100) >= 45 ? TileType.DYNAMIC : TileType.GROUND;
+            return Random.Range(0, 100) >= groundRatio ? TileType.DYNAMIC : TileType.GROUND;
         }
 
         // DYNAMIC -> STATIC 벽에 붙이기
@@ -354,24 +351,6 @@ namespace DungeonGeneratorByBinarySpacePartitioning
                     }
                 }
             }
-
-            // // 보정 작업2 (2층 타일 처리)
-            // for (int i = 0; i < map.GetLength(0); i++)
-            // {
-            //     for (int k = 0; k < map.GetLength(1); k++)
-            //     {
-            //         if (map[i,k] != TileType.GROUND)
-            //             continue;
-
-            //         if (k + 1 < mapSize.y && map[i, k+1] == TileType.DYNAMIC
-            //         && k - 1 >= 0 && map[i, k-1] == TileType.GROUND)
-            //         {
-            //             tilemap.SetTile(new Vector3Int(i - mapSize.x / 2, k - mapSize.y / 2, 0), centerBottomTile);
-            //         }
-            //     }
-            // }
-
-
         }
 
         public void Reset()
